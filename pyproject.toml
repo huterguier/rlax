@@ -1,0 +1,16 @@
+[project]
+name = "rlax"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "jax[cuda]",
+  "flax",
+  "optax",
+  "distrax",
+  "hydra-core",
+  "tqdx",
+  "lox[wandb]@git+https://github.com/huterguier/lox",
+  "gxm[gymnax]@git+https://github.com/huterguier/gxm",
+]
