@@ -15,13 +15,16 @@ dependencies = [
   "distrax",
   "hydra-core",
   "tqdx",
-  "lox[wandb]@git+https://github.com/huterguier/lox",
-  "gxm[gymnax]@git+https://github.com/huterguier/gxm",
+  "lox@git+https://github.com/huterguier/lox",
+  "gxm@git+https://github.com/huterguier/gxm",
 ]
 
 [project.optional-dependencies]
 dev = [
   "ruff",
+]
+examples = [
+  "gxm[gymnax]@git+https://github.com/huterguier/gxm",
 ]
 
 [tool.ruff]
