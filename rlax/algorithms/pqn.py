@@ -37,9 +37,9 @@ class PQNConfig:
     num_steps_rollout: int
     num_minibatches: int
     num_update_epochs: int
-    e_start: float
-    e_end: float
-    e_steps: int
+    epsilon_start: float
+    epsilon_end: float
+    epsilon_steps: int
     gamma: float
     lam: float
     max_grad_norm: float
@@ -79,13 +79,11 @@ class PQN(Algorithm[PQNState]):
         key_init, key_network = jax.random.split(key, 2)
         keys_init = jax.random.split(key_init, self.config.num_envs)
         env_state, timestep = jax.vmap(self.env.init)(keys_init)
-        params = self.network.init(
-            key_network, jax.tree.map(lambda x: x[0], timestep.next_obs)
-        )
+        params = self.network.init(key_network, timestep.next_obs)
         opt_state = self.optimizer.init(params)
 
         return PQNState(
-            step=jnp.int64(0),
+            step=jnp.int32(0),
             params=params,
             opt_state=opt_state,
             env_state=env_state,
@@ -97,9 +95,9 @@ class PQN(Algorithm[PQNState]):
         def pi_epsilon(key, q):
             key_e, key_action = jax.random.split(key)
             epsilon = optax.linear_schedule(
-                self.config.e_start,
-                self.config.e_end,
-                self.config.e_steps,
+                self.config.epsilon_start,
+                self.config.epsilon_end,
+                self.config.epsilon_steps,
             )(state.step)
             action_random: Array = self.env.action_space.sample(
                 key_action, (self.config.num_envs,)
@@ -123,15 +121,13 @@ class PQN(Algorithm[PQNState]):
                 action,
             )
             transition = timestep.transition(obs=obs)
-            q_next = jax.vmap(self.network.apply, (None, 0))(
-                state.params, timestep.next_obs
-            )
+            q_next = self.network.apply(state.params, timestep.next_obs)
             return (env_state, timestep, q_next), (transition, q_next)
 
         keys = jax.random.split(key, self.config.num_steps_rollout)
         env_state = state.env_state
         timestep = state.timestep
-        q = jax.vmap(self.network.apply, (None, 0))(state.params, timestep.next_obs)
+        q = self.network.apply(state.params, timestep.next_obs)
         (env_state, timestep, _), (transitions, qs_next) = jax.lax.scan(
             step, (env_state, timestep, q), keys
         )
@@ -173,14 +169,12 @@ class PQN(Algorithm[PQNState]):
     def update(self, key: Key, state: PQNState, minibatches: PyTree) -> PQNState:
         del key
 
-        def q_pred(params, transition):
-            qs = self.network.apply(params, transition.obs)
-            q = qs[transition.action]
-            return q
-
         def loss(params, minibatch):
             batch, targets = minibatch
-            qs_pred = jax.vmap(q_pred, (None, 0))(params, batch)
+            qs = self.network.apply(params, batch.obs)
+            qs_pred = jnp.take_along_axis(
+                qs, batch.action[:, None], axis=-1
+            ).squeeze(-1)
             loss_value = jnp.mean((qs_pred - targets) ** 2)
             lox.log(
                 {"loss": loss_value, "q_pred": jnp.mean(qs_pred)}
@@ -211,8 +205,9 @@ class PQN(Algorithm[PQNState]):
         def policy(key, policy_state, timestep):
             del key
             state = policy_state
-            q = self.network.apply(state.params, timestep.next_obs)
-            action = jnp.argmax(q, axis=-1)
+            obs = jax.tree.map(lambda x: x[None], timestep.next_obs)
+            q = self.network.apply(state.params, obs)
+            action = jnp.argmax(q, axis=-1)[0]
             return action, policy_state
 
         episodic_return = evaluate_steps(
@@ -229,9 +224,10 @@ class PQN(Algorithm[PQNState]):
     def train(self, key: Key, state: PQNState, num_steps: int) -> PQNState:
 
         def loop(state, key):
-            state, transitions, qs_next = self.rollout(key, state)
-            minibatches = self.minibatches(key, transitions, qs_next)
-            state = self.update(key, state, minibatches)
+            key_rollout, key_minibatches, key_update = jax.random.split(key, 3)
+            state, transitions, qs_next = self.rollout(key_rollout, state)
+            minibatches = self.minibatches(key_minibatches, transitions, qs_next)
+            state = self.update(key_update, state, minibatches)
             lox.log(
                 {"return": jnp.mean(state.timestep.info["episodic_return"])},
             )
