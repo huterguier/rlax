@@ -22,6 +22,7 @@ class Network(nn.Module):
         x = nn.Dense(features=self.n_actions)(x)
         return x
 
+
 if __name__ == "__main__":
     learning_rate = 3e-4
     config = PQNConfig(

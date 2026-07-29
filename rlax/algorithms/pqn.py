@@ -172,13 +172,11 @@ class PQN(Algorithm[PQNState]):
         def loss(params, minibatch):
             batch, targets = minibatch
             qs = self.network.apply(params, batch.obs)
-            qs_pred = jnp.take_along_axis(
-                qs, batch.action[:, None], axis=-1
-            ).squeeze(-1)
-            loss_value = jnp.mean((qs_pred - targets) ** 2)
-            lox.log(
-                {"loss": loss_value, "q_pred": jnp.mean(qs_pred)}
+            qs_pred = jnp.take_along_axis(qs, batch.action[:, None], axis=-1).squeeze(
+                -1
             )
+            loss_value = jnp.mean((qs_pred - targets) ** 2)
+            lox.log({"loss": loss_value, "q_pred": jnp.mean(qs_pred)})
             return loss_value
 
         def update_step(state, minibatch):

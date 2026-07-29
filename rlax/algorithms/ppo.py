@@ -47,9 +47,9 @@ class PPOConfig:
     value_clip: float | None = None
 
     def __post_init__(self):
-        assert (
-            self.num_update_epochs >= 1
-        ), f"num_update_epochs ({self.num_update_epochs}) must be >= 1"
+        assert self.num_update_epochs >= 1, (
+            f"num_update_epochs ({self.num_update_epochs}) must be >= 1"
+        )
         assert self.num_steps_loop % self.num_minibatches == 0, (
             f"num_envs * num_steps_rollout ({self.num_steps_loop}) must be divisible "
             f"by num_minibatches ({self.num_minibatches})"

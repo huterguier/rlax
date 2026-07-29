@@ -17,7 +17,9 @@ class Algorithm[TAlgorithmState: AlgorithmState](Protocol):
     def init(self, key: Key) -> TAlgorithmState: ...
 
     @abstractmethod
-    def train(self, key: Key, state: TAlgorithmState, num_steps: int) -> TAlgorithmState: ...
+    def train(
+        self, key: Key, state: TAlgorithmState, num_steps: int
+    ) -> TAlgorithmState: ...
 
     @abstractmethod
     def evaluate(
