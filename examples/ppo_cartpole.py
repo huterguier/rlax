@@ -1,10 +1,10 @@
-from rlax.algorithms.ppo import PPO, PPOConfig
-
 import distrax
 import flax.linen as nn
 import gxm
 import jax
 import optax
+
+from rlax.algorithms.ppo import PPO, PPOConfig
 
 
 class ActorCritic(nn.Module):

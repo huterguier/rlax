@@ -3,11 +3,11 @@ from typing import Any
 
 import gxm
 import jax
+import jax.numpy as jnp
 import lox
 import optax
 import tqdx
 from gxm.wrappers import RecordEpisodeStatistics
-import jax.numpy as jnp
 
 from rlax.algorithms.algorithm import Algorithm, AlgorithmState
 from rlax.evaluation import evaluate_steps

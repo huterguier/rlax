@@ -1,12 +1,12 @@
 from rlax.algorithms import (
+    PPO,
+    PQN,
     Algorithm,
     AlgorithmState,
-    PPO,
     PPOConfig,
-    PQN,
     PQNConfig,
 )
-from rlax.evaluation import evaluate_steps, evaluate_episodes
+from rlax.evaluation import evaluate_episodes, evaluate_steps
 
 __all__ = [
     "Algorithm",

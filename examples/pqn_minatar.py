@@ -1,10 +1,10 @@
-from rlax.algorithms.pqn import PQN, PQNConfig
-
-import jax
 import flax.linen as nn
-import optax
 import gxm
+import jax
+import optax
 from gxm.wrappers import StickyAction
+
+from rlax.algorithms.pqn import PQN, PQNConfig
 
 
 class Network(nn.Module):

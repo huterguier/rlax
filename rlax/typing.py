@@ -1,7 +1,8 @@
-from typing import Any, Callable, Sequence, TypeAlias
+from collections.abc import Callable, Sequence
+from typing import Any, TypeAlias
 
-import gxm
 import flax.linen as nn
+import gxm
 import jax
 import optax
 
