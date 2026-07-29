@@ -33,6 +33,4 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B"]
-# UP040: PEP 695 `type` aliases are lazily evaluated, which breaks runtime
-# introspection of the jax/flax types in rlax/typing.py
-ignore = ["E501", "UP040"]
+ignore = ["E501"]

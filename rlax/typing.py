@@ -1,29 +1,29 @@
 from collections.abc import Callable, Sequence
-from typing import Any, TypeAlias
+from typing import Any
 
 import flax.linen as nn
 import gxm
 import jax
 import optax
 
-Array: TypeAlias = jax.Array
-Key: TypeAlias = jax.Array
+Array = jax.Array
+Key = jax.Array
 
-PyTree: TypeAlias = Any
+PyTree = Any
 
-Shape: TypeAlias = Sequence[int]
-Module: TypeAlias = nn.Module
-Params: TypeAlias = Any
-Optimizer: TypeAlias = optax.GradientTransformation
-OptimizerState: TypeAlias = optax.OptState
-Environment: TypeAlias = gxm.Environment
-EnvironmentState: TypeAlias = gxm.EnvironmentState
+Shape = Sequence[int]
+Module = nn.Module
+Params = Any
+Optimizer = optax.GradientTransformation
+OptimizerState = optax.OptState
+Environment = gxm.Environment
+EnvironmentState = gxm.EnvironmentState
 
-Timestep: TypeAlias = gxm.Timestep
-Transition: TypeAlias = gxm.Transition
+Timestep = gxm.Timestep
+Transition = gxm.Transition
 
-Action: TypeAlias = PyTree
-Observation: TypeAlias = PyTree
+Action = PyTree
+Observation = PyTree
 
-PolicyState: TypeAlias = PyTree
-Policy: TypeAlias = Callable[[Key, PolicyState, gxm.Timestep], Action]
+PolicyState = PyTree
+Policy = Callable[[Key, PolicyState, gxm.Timestep], Action]
