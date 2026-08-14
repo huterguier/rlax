@@ -45,5 +45,7 @@ if __name__ == "__main__":
 
     key = jax.random.key(0)
     key_init, key_train = jax.random.split(key)
-    pqn_state = pqn.train(key_train, pqn.init(key_init), num_steps=int(1e7))
+    pqn_state = pqn.init(key_init)
+    pqn_state = pqn.train(key_train, pqn_state, num_steps=int(1e7))
+
     print(pqn.evaluate(key, pqn_state, num_steps=20000, num_envs=32))
