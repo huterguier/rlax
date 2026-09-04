@@ -1,6 +1,5 @@
 import jax
 import lox
-import tqdx
 
 from rlax.algorithms.algorithm import Algorithm, AlgorithmState
 from rlax.typing import Key, PyTree
@@ -69,6 +68,6 @@ class Trainer[TAlgorithmState: AlgorithmState](Algorithm[TAlgorithmState]):
             return state, None
 
         keys = jax.random.split(key, self.num_epochs)
-        state, _ = tqdx.scan(epoch, state, keys, desc="epochs")
+        state, _ = jax.lax.scan(epoch, state, keys)
 
         return state

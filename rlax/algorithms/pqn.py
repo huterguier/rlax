@@ -6,7 +6,6 @@ import jax
 import jax.numpy as jnp
 import lox
 import optax
-import tqdx
 from gxm.wrappers import RecordEpisodeStatistics
 
 from rlax.algorithms.algorithm import Algorithm, AlgorithmState
@@ -232,6 +231,6 @@ class PQN(Algorithm[PQNState]):
             return state, None
 
         keys = jax.random.split(key, self.config.num_loops(num_steps))
-        state, _ = tqdx.scan(loop, state, keys)
+        state, _ = jax.lax.scan(loop, state, keys)
 
         return state

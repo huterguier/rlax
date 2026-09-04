@@ -6,7 +6,6 @@ import jax
 import jax.numpy as jnp
 import lox
 import optax
-import tqdx
 from gxm.wrappers import RecordEpisodeStatistics
 
 from rlax.algorithms.algorithm import Algorithm, AlgorithmState
@@ -290,6 +289,6 @@ class PPO(Algorithm[PPOState]):
             return state, None
 
         keys = jax.random.split(key, num_loops)
-        state, _ = tqdx.scan(loop, state, keys)
+        state, _ = jax.lax.scan(loop, state, keys)
 
         return state

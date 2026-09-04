@@ -1,6 +1,5 @@
 import jax
 import jax.numpy as jnp
-import tqdx
 from gxm.core import Environment
 from gxm.typing import Key, Policy, PolicyState
 from gxm.wrappers import EpisodeCounter, Evaluate
@@ -40,7 +39,7 @@ def evaluate_steps(
     def _evaluate(key):
         env_state, timestep = env.init(key)
         carry = (key, env_state, policy_state, timestep)
-        carry, _ = tqdx.scan(step, carry, None, length=num_steps)
+        carry, _ = jax.lax.scan(step, carry, None, length=num_steps)
         _, env_state, _, _ = carry
         return env_state.mean_return
 
