@@ -7,7 +7,7 @@ from rlax.algorithms import (
     PQNConfig,
 )
 from rlax.evaluation import evaluate_episodes, evaluate_steps
-from rlax.wrappers import Trainer
+from rlax.wrappers import Trainer, TrainerState
 
 __all__ = [
     "Algorithm",
@@ -17,6 +17,7 @@ __all__ = [
     "PQN",
     "PQNConfig",
     "Trainer",
+    "TrainerState",
     "evaluate_steps",
     "evaluate_episodes",
 ]

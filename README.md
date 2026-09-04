@@ -36,3 +36,14 @@ obtained by spooling the run.
 alg_state, logs = lox.spool(trainer.train)(key, alg_state, num_steps=int(1e7))
 logs["eval/return"]  # shape (10,)
 ```
+
+### Logging
+`Trainer` takes a `lox.Logger`, which receives the algorithm's own logs at full
+resolution along with the `eval/` metrics, once per epoch.
+```python
+trainer = Trainer(algorithm, num_epochs=10, logger=WandbLogger(project="rlax"))
+```
+The logger defaults to an empty `MultiLogger`, so logging to one changes where
+metrics go but not what `spool` returns. The algorithm's logs are spooled per epoch
+and come back with an epoch axis, e.g. `logs["return"]` has shape
+`(num_epochs, per_epoch)`; `reshape(-1)` flattens it.
