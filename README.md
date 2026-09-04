@@ -4,6 +4,17 @@
 - PPO
 - PQN
 
+## Networks
+`rlax.networks` has the stock pieces: an `ActorCritic` module built from `MLP` torsos and a
+policy head, `CategoricalHead` for discrete actions, `GaussianHead` for continuous ones.
+`GaussianHead(squash=True)` returns a Gaussian over pre-tanh actions with a tanh-aware
+entropy; use it with an environment wrapped in `gxm.wrappers.SquashActions`.
+```python
+network = ActorCritic(GaussianHead(action_size, squash=True), policy_layers=(128, 128))
+```
+Any module returning `(dist, value)` works in place of it; `rlax.networks.ActorCriticNetwork`
+spells out the contract.
+
 ## Usage
 ```python
 algorithm = Algorithm(config, env, network, optimizer)
