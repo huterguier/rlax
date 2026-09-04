@@ -14,7 +14,6 @@ dependencies = [
   "optax",
   "distrax",
   "hydra-core",
-  "tqdx",
   "lox@git+https://github.com/huterguier/lox",
   "gxm@git+https://github.com/huterguier/gxm",
 ]
@@ -25,6 +24,7 @@ dev = [
 ]
 examples = [
   "gxm[gymnax]@git+https://github.com/huterguier/gxm",
+  "rich",
 ]
 
 [tool.ruff]
