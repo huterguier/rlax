@@ -3,6 +3,7 @@ import jax
 import optax
 from console_logger import ConsoleLogger
 
+from rlax.agents import Normalize
 from rlax.algorithms.ppo import PPO, PPOConfig
 from rlax.networks import ActorCritic, CategoricalHead
 from rlax.wrappers import Trainer
@@ -27,7 +28,8 @@ if __name__ == "__main__":
     network = ActorCritic(CategoricalHead(env.action_space.n))
     optimizer = optax.adam(learning_rate=2.5e-4)
 
-    ppo = PPO(config, env, network, optimizer)
+    # Running observation normalization, as an agent wrapper.
+    ppo = PPO(config, env, network, optimizer, wrappers=(Normalize,))
     trainer = Trainer(
         ppo,
         num_epochs=10,
@@ -36,13 +38,6 @@ if __name__ == "__main__":
         logger=ConsoleLogger(progress={"step": num_steps}),
     )
 
-    def train(key):
-        key_init, key_train = jax.random.split(key)
-        ppo_state = trainer.train(
-            key_train, trainer.init(key_init), num_steps=num_steps
-        )
-        return ppo_state
-
     key = jax.random.key(0)
-    keys = jax.random.split(key, 5)
-    jax.vmap(train)(keys)
+    ppo_state = trainer.init(key)
+    ppo_state = trainer.train(key, ppo_state, num_steps=num_steps)

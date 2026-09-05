@@ -26,4 +26,4 @@ Action = PyTree
 Observation = PyTree
 
 PolicyState = PyTree
-Policy = Callable[[Key, PolicyState, gxm.Timestep], Action]
+Policy = Callable[[Key, PolicyState, gxm.Timestep], tuple[Action, PolicyState]]
