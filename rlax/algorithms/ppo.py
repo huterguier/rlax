@@ -17,11 +17,12 @@ class PPO(OnPolicy):
         self,
         config: PPOConfig,
         env: Environment,
-        network,
+        actor,
+        critic,
         optimizer: Optimizer,
         wrappers: Sequence[Callable[[Agent], Agent]] = (),
     ):
-        agent: Agent = PPOAgent(config, network, optimizer)
+        agent: Agent = PPOAgent(config, actor, critic, optimizer)
         for wrap in wrappers:
             agent = wrap(agent)
         super().__init__(agent, env, config)

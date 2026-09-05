@@ -61,25 +61,32 @@ class PPOConfig:
 class PPOAgent(AgentBase[PPOState]):
     """Proximal Policy Optimization, as an :class:`~rlax.Agent`.
 
-    The network maps a batch of observations to ``(dist, value)``, where ``dist``
-    is a distrax distribution with batch shape ``(batch,)`` and ``value`` is an
-    array of shape ``(batch,)``. ``aux`` is ``(log_prob, value)`` per step.
+    ``actor`` maps a batch of observations to a distrax distribution with batch
+    shape ``(batch,)``; ``critic`` maps it to values of shape ``(batch,)``. Their
+    parameters live under ``params["actor"]`` and ``params["critic"]`` and share
+    one optimizer. ``aux`` is ``(log_prob, value)`` per step.
     """
 
     config: PPOConfig
-    network: Any
+    actor: Any
+    critic: Any
     optimizer: Optimizer
 
-    def __init__(self, config: PPOConfig, network, optimizer):
+    def __init__(self, config: PPOConfig, actor, critic, optimizer):
         self.config = config
-        self.network = network
+        self.actor = actor
+        self.critic = critic
         self.optimizer = optax.chain(
             optax.clip_by_global_norm(self.config.max_grad_norm),
             optimizer,
         )
 
     def init(self, key: Key, timestep: Timestep) -> PPOState:
-        params = self.network.init(key, timestep.next_obs)
+        key_actor, key_critic = jax.random.split(key)
+        params = {
+            "actor": self.actor.init(key_actor, timestep.next_obs),
+            "critic": self.critic.init(key_critic, timestep.next_obs),
+        }
         return PPOState(params=params, opt_state=self.optimizer.init(params))
 
     def act(
@@ -90,10 +97,11 @@ class PPOAgent(AgentBase[PPOState]):
         timestep: Timestep,
         evaluation: bool = False,
     ) -> tuple[Action, PPOState, None, PyTree]:
-        dist, value = self.network.apply(state.params, timestep.next_obs)
-        assert value.ndim == 1, f"expected value of shape (batch,), got {value.shape}"
+        dist = self.actor.apply(state.params["actor"], timestep.next_obs)
         if evaluation:
             return dist.mode(), state, carry, None
+        value = self.critic.apply(state.params["critic"], timestep.next_obs)
+        assert value.ndim == 1, f"expected value of shape (batch,), got {value.shape}"
         action, log_prob = dist.sample_and_log_prob(seed=key)
         return action, state, carry, (log_prob, value)
 
@@ -129,7 +137,8 @@ class PPOAgent(AgentBase[PPOState]):
         self, key: Key, state: PPOState, transitions: Transition, aux: PyTree
     ) -> PPOState:
         log_probs, values = aux
-        _, value_last = self.network.apply(state.params, transitions.next_obs[-1])
+        obs_last = jax.tree.map(lambda x: x[-1], transitions.next_obs)
+        value_last = self.critic.apply(state.params["critic"], obs_last)
         advantages = self.advantages(transitions, values, value_last)
         returns = advantages + values
         batch = (transitions, log_probs, values, advantages, returns)
@@ -142,7 +151,8 @@ class PPOAgent(AgentBase[PPOState]):
                     advantages.std() + 1e-8
                 )
 
-            dist, values = self.network.apply(params, transitions.obs)
+            dist = self.actor.apply(params["actor"], transitions.obs)
+            values = self.critic.apply(params["critic"], transitions.obs)
             log_probs = dist.log_prob(transitions.action)
             entropy = dist.entropy().mean()
             ratio = jnp.exp(log_probs - log_probs_old)

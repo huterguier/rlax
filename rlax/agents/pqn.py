@@ -137,7 +137,8 @@ class PQNAgent(AgentBase[PQNState]):
         # aux[t] is Q(obs_t); Q(next_obs_t) is aux[t + 1] for all but the last
         # step. Post-reset observations are masked by ``done`` in the targets.
         qs = aux
-        q_last = self.network.apply(state.params, transitions.next_obs[-1])
+        obs_last = jax.tree.map(lambda x: x[-1], transitions.next_obs)
+        q_last = self.network.apply(state.params, obs_last)
         qs_next = jnp.concatenate([qs[1:], q_last[None]], axis=0)
         minibatches = self.minibatches(key, transitions, qs_next)
 

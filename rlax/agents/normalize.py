@@ -20,17 +20,26 @@ class NormalizeState:
 
 
 def welford_batch(
-    count: Array, mean: Array, m2: Array, x: Array
-) -> tuple[Array, Array, Array]:
-    """Fold a ``(batch, ...)`` sample into running Welford statistics."""
-    n = x.shape[0]
-    batch_mean = x.mean(axis=0)
-    batch_m2 = ((x - batch_mean) ** 2).sum(axis=0)
-    delta = batch_mean - mean
+    count: Array, mean: PyTree, m2: PyTree, x: PyTree
+) -> tuple[Array, PyTree, PyTree]:
+    """Fold a ``(batch, ...)`` sample into running Welford statistics, leaf by
+    leaf. ``count`` is shared by all leaves."""
+    n = jax.tree.leaves(x)[0].shape[0]
     total = count + n
-    mean = mean + delta * n / total
-    m2 = m2 + batch_m2 + delta**2 * count * n / total
-    return total, mean, m2
+
+    def fold_mean(mean, x):
+        return mean + (x.mean(axis=0) - mean) * n / total
+
+    def fold_m2(mean, m2, x):
+        batch_mean = x.mean(axis=0)
+        batch_m2 = ((x - batch_mean) ** 2).sum(axis=0)
+        return m2 + batch_m2 + (batch_mean - mean) ** 2 * count * n / total
+
+    return (
+        total,
+        jax.tree.map(fold_mean, mean, x),
+        jax.tree.map(fold_m2, mean, m2, x),
+    )
 
 
 class Normalize[TCarry](Agent[NormalizeState, TCarry]):
@@ -42,8 +51,9 @@ class Normalize[TCarry](Agent[NormalizeState, TCarry]):
     data an update sees is normalized the same way it was when acted upon. The
     frozen values are refreshed at the end of each ``update``.
 
-    Observations must be flat arrays. ``initial`` seeds the frozen ``mean`` and
-    ``std`` used for the very first rollout.
+    Observations may be any pytree of arrays; statistics are kept per leaf.
+    ``initial`` seeds the frozen ``mean`` and ``std`` used for the very first
+    rollout.
     """
 
     agent: Agent
@@ -60,23 +70,27 @@ class Normalize[TCarry](Agent[NormalizeState, TCarry]):
         self.eps = eps
         self.initial = initial
 
-    def normalize(self, state: NormalizeState, obs: Array) -> Array:
-        return (obs - state.mean) / state.std
+    def normalize(self, state: NormalizeState, obs: PyTree) -> PyTree:
+        return jax.tree.map(lambda x, m, s: (x - m) / s, obs, state.mean, state.std)
 
     def init(self, key: Key, timestep: Timestep) -> NormalizeState:
         obs = timestep.next_obs
-        shape = obs.shape[1:]
+        zeros = jax.tree.map(lambda x: jnp.zeros(x.shape[1:], x.dtype), obs)
+        ones = jax.tree.map(jnp.ones_like, zeros)
         if self.initial is None:
-            mean, std = jnp.zeros(shape), jnp.ones(shape)
+            mean, std = zeros, ones
         else:
-            mean, std = (jnp.asarray(x, obs.dtype) for x in self.initial)
+            cast = lambda init: jax.tree.map(  # noqa: E731
+                lambda x, z: jnp.asarray(x, z.dtype), init, zeros
+            )
+            mean, std = cast(self.initial[0]), cast(self.initial[1])
         state = NormalizeState(
             inner=None,
             mean=mean,
             std=std,
-            count=jnp.zeros((), obs.dtype),
-            run_mean=jnp.zeros(shape, obs.dtype),
-            run_m2=jnp.zeros(shape, obs.dtype),
+            count=jnp.zeros((), jnp.float32),
+            run_mean=zeros,
+            run_m2=zeros,
         )
         timestep = replace(timestep, next_obs=self.normalize(state, obs))
         state.inner = self.agent.init(key, timestep)
@@ -117,7 +131,10 @@ class Normalize[TCarry](Agent[NormalizeState, TCarry]):
         )
         state.inner = self.agent.update(key, state.inner, transitions, aux)
         state.mean = state.run_mean
-        state.std = jnp.maximum(
-            jnp.sqrt(state.run_m2 / jnp.maximum(state.count, 1)), self.eps
+        state.std = jax.tree.map(
+            lambda m2: jnp.maximum(
+                jnp.sqrt(m2 / jnp.maximum(state.count, 1)), self.eps
+            ),
+            state.run_m2,
         )
         return state

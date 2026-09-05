@@ -15,21 +15,26 @@ Agent wrappers sit between the environment and the learning rule. `Normalize`
 standardizes observations with running statistics, frozen per rollout so an update
 sees its data the way it was acted upon.
 ```python
-ppo = PPO(config, env, network, optimizer, wrappers=(Normalize,))
+ppo = PPO(config, env, actor, critic, optimizer, wrappers=(Normalize,))
 # or, explicitly
-ppo = OnPolicy(Normalize(PPOAgent(config, network, optimizer)), env, config)
+ppo = OnPolicy(Normalize(PPOAgent(config, actor, critic, optimizer)), env, config)
 ```
 
 ## Networks
-`rlax.networks` has the stock pieces: an `ActorCritic` module built from `MLP` torsos and a
-policy head, `CategoricalHead` for discrete actions, `GaussianHead` for continuous ones.
-`GaussianHead(squash=True)` returns a Gaussian over pre-tanh actions with a tanh-aware
-entropy; use it with an environment wrapped in `gxm.wrappers.SquashActions`.
+`rlax.networks` has the stock pieces: `Actor`, an `MLP` torso feeding a policy head,
+`Critic`, an `MLP` torso feeding a scalar value, `CategoricalHead` for discrete actions and
+`GaussianHead` for continuous ones. `GaussianHead(squash=True)` returns a Gaussian over
+pre-tanh actions with a tanh-aware entropy; use it with an environment wrapped in
+`gxm.wrappers.SquashActions`.
 ```python
-network = ActorCritic(GaussianHead(action_size, squash=True), policy_layers=(128, 128))
+actor = Actor(GaussianHead(action_size, squash=True), layer_sizes=(128, 128))
+critic = Critic(layer_sizes=(256, 256))
 ```
-Any module returning `(dist, value)` works in place of it; `rlax.networks.ActorCriticNetwork`
-spells out the contract.
+Both take an `obs_key` to read one entry of a dict observation, which is how an
+asymmetric actor-critic is built: the environment emits `{"actor": ..., "critic": ...}`
+and each module picks its own. Any module returning a distribution or a `(batch,)` value
+array works in their place; `rlax.networks.ActorNetwork` and `CriticNetwork` spell out the
+contracts.
 
 ## Usage
 ```python

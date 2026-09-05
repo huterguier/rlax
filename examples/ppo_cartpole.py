@@ -5,7 +5,7 @@ from console_logger import ConsoleLogger
 
 from rlax.agents import Normalize
 from rlax.algorithms.ppo import PPO, PPOConfig
-from rlax.networks import ActorCritic, CategoricalHead
+from rlax.networks import Actor, CategoricalHead, Critic
 from rlax.wrappers import Trainer
 
 if __name__ == "__main__":
@@ -25,11 +25,12 @@ if __name__ == "__main__":
         value_clip=0.2,
     )
     env = gxm.make("Gymnax/CartPole-v1")
-    network = ActorCritic(CategoricalHead(env.action_space.n))
+    actor = Actor(CategoricalHead(env.action_space.n))
+    critic = Critic()
     optimizer = optax.adam(learning_rate=2.5e-4)
 
     # Running observation normalization, as an agent wrapper.
-    ppo = PPO(config, env, network, optimizer, wrappers=(Normalize,))
+    ppo = PPO(config, env, actor, critic, optimizer, wrappers=(Normalize,))
     trainer = Trainer(
         ppo,
         num_epochs=10,
