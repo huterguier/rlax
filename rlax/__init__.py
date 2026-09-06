@@ -11,6 +11,13 @@ from rlax.algorithms import (
     PPOConfig,
     PQNConfig,
 )
+from rlax.buffers import (
+    Buffer,
+    ItemBuffer,
+    ItemBufferState,
+    SequenceBuffer,
+    SequenceBufferState,
+)
 from rlax.evaluation import evaluate_episodes, evaluate_steps
 from rlax.wrappers import Trainer, TrainerState
 
@@ -19,6 +26,9 @@ __all__ = [
     "AgentBase",
     "Algorithm",
     "AlgorithmState",
+    "Buffer",
+    "ItemBuffer",
+    "ItemBufferState",
     "Normalize",
     "NormalizeState",
     "OnPolicy",
@@ -30,6 +40,8 @@ __all__ = [
     "PQN",
     "PQNAgent",
     "PQNConfig",
+    "SequenceBuffer",
+    "SequenceBufferState",
     "Trainer",
     "TrainerState",
     "evaluate_steps",
